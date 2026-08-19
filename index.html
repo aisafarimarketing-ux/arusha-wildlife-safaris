@@ -493,7 +493,8 @@ p{margin:0}
 /* the trust line, moved off the video onto paper */
 .trust{display:flex;flex-wrap:wrap;gap:.7rem clamp(1.2rem,3vw,3rem);align-items:center}
 .trust span{font-family:var(--font-mono);font-weight:600;font-size:.75rem;letter-spacing:.2em;
-  text-transform:uppercase;color:var(--ash);display:flex;align-items:center;gap:.7rem}  /* 5.94:1 */
+  text-transform:uppercase;color:var(--ash);display:flex;align-items:center;gap:.7rem;
+  white-space:nowrap;flex:0 0 auto}  /* 5.94:1 - nowrap or the ticker breaks phrases mid-word */
 .trust span::before{content:"";width:.42rem;height:.42rem;border-radius:50%;background:var(--olive);flex:none}
 
 /* ---------------- phone ---------------- */
@@ -521,6 +522,59 @@ p{margin:0}
   .car__cnt{margin-left:0;width:100%;order:3}
 }
 @media (min-width:1400px){ .car{--per:3} }
+</style>
+
+
+<style>
+/* ============================================================
+   MOTION LAYER
+   Neo Mirai vocabulary only: transform / opacity / filter, the three
+   house easings, no bounce. Everything here degrades to nothing under
+   prefers-reduced-motion.
+   ============================================================ */
+
+/* --- trust line: continuous right-to-left ticker --- */
+.trust{overflow:hidden;position:relative;mask-image:linear-gradient(to right,transparent 0,#000 5%,#000 95%,transparent 100%);
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 5%,#000 95%,transparent 100%)}
+.trust__track{display:flex;width:max-content;gap:clamp(1.2rem,3vw,3rem);
+  animation:marquee 34s linear infinite;will-change:transform}
+.trust:hover .trust__track,.trust:focus-within .trust__track{animation-play-state:paused}
+@keyframes marquee{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+
+/* --- parallax --- */
+/* the media sits in an overflow-hidden frame and is scaled just past the frame,
+   so translating it never exposes an edge */
+.px{overflow:hidden}
+.px > img,.px > video{will-change:transform}
+[data-px]{transform:translate3d(0,var(--pxy,0),0)}
+
+/* --- buttons: Mirai 'press', plus a single gold sheen sweep --- */
+.btn{position:relative;overflow:hidden;isolation:isolate}
+.btn::after{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(105deg,transparent 32%,rgba(255,255,255,.42) 48%,transparent 64%);
+  transform:translate3d(-130%,0,0);
+}
+.btn:hover::after{transform:translate3d(130%,0,0);transition:transform .72s var(--ease-quart)}
+.btn:active{transform:translateY(0) scale(.985)}
+.btn .arw{transition:transform .28s var(--ease)}
+.btn:hover .arw{transform:translateX(.22rem)}
+/* the sheen would wash out the dark buttons - keep it to the light fills */
+.btn--ghost::after,.btn--ghostnight::after{background:linear-gradient(105deg,transparent 32%,rgba(255,255,255,.16) 48%,transparent 64%)}
+
+.tlink .arw{transition:transform .28s var(--ease)}
+.tlink:hover .arw{transform:translateX(.22rem)}
+
+/* tiles lift a touch more decisively, still shadow-on-hover only */
+.tile{will-change:transform}
+.car__btn:active{transform:scale(.94)}
+
+@media (prefers-reduced-motion:reduce){
+  .trust__track{animation:none;width:auto}
+  .trust{mask-image:none;-webkit-mask-image:none}
+  [data-px]{transform:none!important}
+  .btn::after{display:none}
+}
 </style>
 
 
@@ -848,9 +902,16 @@ function pageHome() {
     '<a class="btn btn--solidlight" href="#/safaris">View Safaris<span class="arw">&#8594;</span></a>',
     null, false, true) +
 
+  // ticker runs right-to-left; the list is duplicated so the -50% loop is seamless
   '<section class="band band--tight"><div class="wrap">' +
-    '<div class="trust">' + ['Arusha-based', 'Private vehicle &amp; guide', 'Tailor-made journeys',
-      'Northern &amp; southern circuits'].map(t => '<span>' + t + '</span>').join('') + '</div>' +
+    (function () {
+      const items = ['Arusha-based', 'Private vehicle &amp; guide', 'Tailor-made journeys',
+        'Northern &amp; southern circuits', 'Serengeti &amp; Ngorongoro specialists',
+        'Reachable arrival to departure'];
+      const run = items.map(t => '<span>' + t + '</span>').join('');
+      return '<div class="trust"><div class="trust__track" aria-label="' +
+        items.join(', ').replace(/&amp;/g, 'and') + '">' + run + run + '</div></div>';
+    })() +
   '</div></section>' +
 
   '<section class="band"><div class="wrap split">' +
@@ -1279,6 +1340,7 @@ function render() {
   firstPaint = false;
   wire();
   observe();
+  parallax();
 }
 
 /* ---------------- interactions ---------------- */
@@ -1335,10 +1397,34 @@ function wire() {
     }
 
     car.querySelectorAll('.car__btn').forEach((b) =>
-      b.addEventListener('click', () => vp.scrollBy({ left: Number(b.dataset.dir) * step(), behavior: 'smooth' })));
+      b.addEventListener('click', () => { stop(); vp.scrollBy({ left: Number(b.dataset.dir) * step(), behavior: 'smooth' }); }));
     let t; vp.addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(paint, 90); }, { passive: true });
     window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(paint, 140); });
     paint();
+
+    // Auto-advance right-to-left: cards travel leftwards, wrapping at the end.
+    // Stops permanently on any deliberate input, and never runs off-screen or
+    // for a visitor who asked for reduced motion.
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let timer = null, dead = reduce;
+    const tick = () => {
+      if (dead) return;
+      const atEnd = vp.scrollLeft > vp.scrollWidth - vp.clientWidth - 6;
+      if (atEnd) vp.scrollTo({ left: 0, behavior: 'smooth' });
+      else vp.scrollBy({ left: step(), behavior: 'smooth' });
+    };
+    function play() { if (!dead && timer === null) timer = setInterval(tick, 4600); }
+    function pause() { if (timer !== null) { clearInterval(timer); timer = null; } }
+    function stop() { dead = true; pause(); }
+    ['pointerdown', 'touchstart', 'keydown', 'wheel'].forEach(ev =>
+      vp.addEventListener(ev, stop, { passive: true, once: true }));
+    car.addEventListener('mouseenter', pause);
+    car.addEventListener('mouseleave', play);
+    car.addEventListener('focusin', stop);
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver((es) => es.forEach(e => e.isIntersecting ? play() : pause()),
+        { threshold: 0.25 }).observe(car);
+    } else play();
   });
 
   // Hero video: reveal ONLY on a real 'playing' event. If autoplay is blocked,
@@ -1434,6 +1520,63 @@ function observe() {
     });
   }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
   items.forEach(i => io.observe(i));
+}
+
+/* ---------------- parallax ----------------
+   One rAF loop, one scrollY read per frame, and only elements currently on
+   screen are touched. Transform only - never a layout property - and each
+   moving image is pre-scaled inside an overflow-hidden frame so the drift
+   can never expose an edge. */
+let pxItems = [], pxRaf = 0, pxIO = null;
+function parallax() {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (pxIO) pxIO.disconnect();
+  pxItems = [];
+  if (reduce) return;
+
+  const targets = [
+    ['.hero__media img, .hero__media video', 0.16],
+    ['.tile__img img', 0.07],
+    ['.dest img', 0.09],
+    ['.mosaic img', 0.10],
+    ['.day__img img', 0.07]
+  ];
+  const live = new Set();
+  targets.forEach(([sel, depth]) => {
+    document.querySelectorAll(sel).forEach((el) => {
+      const frame = el.parentElement;
+      if (!frame) return;
+      frame.classList.add('px');
+      // grow past the frame by twice the maximum drift so no edge shows
+      el.style.transform = 'scale(' + (1 + depth * 0.9) + ')';
+      el.dataset.px = depth;
+      pxItems.push({ el, frame, depth });
+    });
+  });
+  if (!pxItems.length) return;
+
+  pxIO = new IntersectionObserver((es) => {
+    es.forEach(e => e.isIntersecting ? live.add(e.target) : live.delete(e.target));
+    if (live.size && !pxRaf) pxRaf = requestAnimationFrame(frame);
+  }, { rootMargin: '15% 0px 15% 0px' });
+  pxItems.forEach(i => pxIO.observe(i.frame));
+
+  function frame() {
+    pxRaf = 0;
+    const vh = window.innerHeight;
+    pxItems.forEach(({ el, frame: f, depth }) => {
+      if (!live.has(f)) return;
+      const r = f.getBoundingClientRect();
+      if (r.bottom < -50 || r.top > vh + 50) return;
+      // -1 at the bottom of the viewport, +1 at the top
+      const progress = 1 - (r.top + r.height / 2) / (vh / 2 + r.height / 2);
+      const shift = progress * depth * r.height * 0.5;
+      el.style.transform = 'translate3d(0,' + shift.toFixed(1) + 'px,0) scale(' + (1 + depth * 0.9) + ')';
+    });
+    if (live.size) pxRaf = requestAnimationFrame(frame);
+  }
+  window.addEventListener('scroll', () => { if (live.size && !pxRaf) pxRaf = requestAnimationFrame(frame); }, { passive: true });
+  pxRaf = requestAnimationFrame(frame);
 }
 
 window.addEventListener('hashchange', render);

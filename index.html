@@ -724,9 +724,11 @@ function heroBlock(slug, alt, eyebrow, h1, sub, ctas, strip, small, video, pos, 
   const media = video
     ? '<div class="hero__media"' + st + '>' +
         '<img src="' + (A.cheetahhero || '') + '" alt="Two cheetah on the open plains of the Serengeti" fetchpriority="high">' +
-        '<video id="heroVid" muted loop playsinline preload="auto" poster="' + (A.cheetahhero || '') + '">' +
-          '<source src="' + (A.herovideo || '') + '" type="video/mp4">' +
-        '</video>' +
+        // preload="none" and no <source> until JS asks for it: the HD file must
+        // never block first paint or the load event. The poster is the same
+        // retina cheetah still that sits underneath, so nothing pops.
+        '<video id="heroVid" muted loop playsinline preload="none" poster="' + (A.cheetahhero || '') + '" ' +
+          'data-src="' + (A.herovideo || '') + '"></video>' +
       '</div>'
     : '<div class="hero__media"' + st + '><img src="' + (A[slug] || '') + '" alt="' + esc(alt) + '" loading="eager" fetchpriority="high"></div>';
   return '<section class="hero' + (small ? ' hero--page' : '') + '">' +
@@ -1328,12 +1330,28 @@ function wire() {
       vid.addEventListener('playing', () => vid.classList.add('on'));
       ['error', 'abort', 'stalled', 'emptied'].forEach(ev =>
         vid.addEventListener(ev, () => vid.classList.remove('on')));
-      const pr = vid.play();
-      if (pr && pr.catch) pr.catch(() => vid.classList.remove('on'));
+
+      // Attach the source only once the page is painted and idle, so the HD
+      // file downloads behind the poster instead of in front of it.
+      let started = false;
+      const start = () => {
+        if (started) return; started = true;
+        vid.preload = 'auto';
+        const s = document.createElement('source');
+        s.src = vid.dataset.src; s.type = 'video/mp4';
+        vid.appendChild(s);
+        vid.load();
+        const pr = vid.play();
+        if (pr && pr.catch) pr.catch(() => vid.classList.remove('on'));
+      };
+      const idle = window.requestIdleCallback || ((f) => setTimeout(f, 320));
+      if (document.readyState === 'complete') idle(start, { timeout: 1800 });
+      else window.addEventListener('load', () => idle(start, { timeout: 1800 }), { once: true });
+
       // pause the loop while the hero is off-screen
       if ('IntersectionObserver' in window) {
         new IntersectionObserver((es) => es.forEach(e => {
-          if (e.isIntersecting) { const q = vid.play(); if (q && q.catch) q.catch(() => {}); }
+          if (e.isIntersecting) { if (started) { const q = vid.play(); if (q && q.catch) q.catch(() => {}); } }
           else { try { vid.pause(); } catch (err) {} }
         }), { threshold: 0.01 }).observe(vid);
       }

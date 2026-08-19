@@ -201,29 +201,28 @@ p{margin:0}
    plays - blocked autoplay, decode failure, reduced motion, or a dead connection */
 .hero__media video{opacity:0;transition:opacity .9s var(--ease)}
 .hero__media video.on{opacity:1}
-/* The frame stays BRIGHT. Instead of veiling the whole hero, the global pass is
-   a light vignette for depth only, and the darkening that carries the type is a
-   tight ellipse anchored to the bottom-left corner where the copy actually sits
-   (Law 5a: "a scrim sized to where the text really ends"). Everything right of
-   ~60% keeps the footage at full luminance. */
-.hero__scrim{position:absolute;inset:0;pointer-events:none;background:
-  linear-gradient(to top, rgba(10,10,9,.22) 0%, rgba(10,10,9,.08) 24%, rgba(10,10,9,0) 46%)}
-/* The darkening lives on the COPY BLOCK, not the frame: strong across the lower
-   third where the type sits, gone entirely above it, and eased off to the right
-   so the far side of the shot stays open. Alpha at the eyebrow (top of the
-   block) is ~.70, which puts --rice at 8:1 even over a blown-out sky pixel. */
-.hero__in::before{
-  content:"";position:absolute;inset:-4rem 0 -1rem 0;pointer-events:none;z-index:0;
-  background:linear-gradient(to top, rgba(8,9,7,.90) 0%, rgba(8,9,7,.84) 42%, rgba(8,9,7,.74) 68%,
-                                     rgba(8,9,7,.62) 85%, rgba(8,9,7,.22) 95%, rgba(8,9,7,0) 100%);
-  /* masked away toward the right, so the scrim only exists under the type and
-     the far side of the frame keeps the footage at full brightness */
-  -webkit-mask-image:linear-gradient(to right,#000 0%,#000 50%,rgba(0,0,0,.55) 70%,rgba(0,0,0,0) 88%);
-  mask-image:linear-gradient(to right,#000 0%,#000 50%,rgba(0,0,0,.55) 70%,rgba(0,0,0,0) 88%);
-}
+/* NO SCRIM. Founder decision, 2026-08-19: the gradient read as a dirty grey
+   wash over the footage, so every overlay shade is gone and the video plays at
+   full brightness edge to edge.
+   The trade this makes, stated plainly: a DOM/pixel contrast measurement of the
+   hero type no longer passes - on the brightest frames --rice sits at roughly
+   1.5-2.5:1 against the sky. Legibility is carried instead by a tight dark halo
+   that hugs the glyphs (below), which real eyes read but a background-colour
+   test cannot score. If the headline ever reads badly on a given clip, the fix
+   is to change the footage or move the type off it - NOT to put the wash back. */
+.hero__scrim{display:none}
 .hero__in > *{position:relative;z-index:1}
-/* pure margin on top of the measured scrim - costs the photograph nothing */
-.hero h1,.hero__sub,.hero__in .eyebrow,.hero__strip{text-shadow:0 1px 14px rgba(8,9,7,.55)}
+/* The halo is the whole legibility budget now. Layered tight-to-wide: a 1px
+   contact shadow for edge definition, a close blur that fills counters, and a
+   wide soft pool that separates the block from busy grass without reading as
+   a box. */
+.hero h1,.hero__sub,.hero__in .eyebrow,.hero__strip,.hero__rail b{
+  text-shadow:
+    0 1px 1px rgba(6,7,5,.92),
+    0 0 6px rgba(6,7,5,.85),
+    0 2px 18px rgba(6,7,5,.78),
+    0 4px 46px rgba(6,7,5,.55);
+}
 .hero__in{position:relative;z-index:2;padding:clamp(2.4rem,5vw,4.4rem) var(--gut) clamp(2.2rem,3.6vw,3.2rem);
   max-width:100rem;margin-inline:auto;width:100%}
 .hero h1{color:var(--rice);max-width:16ch}
@@ -363,13 +362,6 @@ p{margin:0}
   /* On a phone the copy spans the full width, so the bottom-left ellipse cannot
      cover it - the copy block carries a full-width vertical scrim instead, and
      the global pass stays light so the footage above it is bright. */
-  .hero__scrim{background:
-    linear-gradient(to top, rgba(10,10,9,.22) 0%, rgba(10,10,9,.08) 28%, rgba(10,10,9,0) 52%)}
-  /* no horizontal mask on a phone - the copy runs the full width, so masking the
-     right-hand side would strip the scrim out from under half of every line */
-  .hero__in::before{inset:-5rem 0 0 0;-webkit-mask-image:none;mask-image:none;background:
-    linear-gradient(to top, rgba(8,9,7,.94) 0%, rgba(8,9,7,.91) 44%, rgba(8,9,7,.86) 66%,
-                            rgba(8,9,7,.74) 80%, rgba(8,9,7,.30) 93%, rgba(8,9,7,0) 100%)}
   .hero .display--xl{font-size:clamp(2.4rem,9vw,3.4rem)}
   .hero__strip{gap:.55rem 1.4rem;margin-top:1.7rem;padding-top:1.1rem}
   .split,.split--even{grid-template-columns:1fr;gap:2rem}
@@ -480,6 +472,29 @@ p{margin:0}
 
 /* hero art direction: keep animals in frame rather than centre-cropping heads off */
 .hero__media img,.hero__media video{object-position:var(--pos,50% 42%)}
+
+/* --- hero type, now that it sits on unscrimmed footage --- */
+/* gold at 12px is hopeless over bright grass; the eyebrow goes white and up a
+   size, and every hero label leans on the halo rather than a background */
+/* thin letterforms on a bright field need a DENSE, tight halo rather than a
+   wide soft one - the close opaque rings are what keep the strokes readable */
+.hero__in .eyebrow{color:var(--rice);font-size:.8125rem;letter-spacing:.26em;font-weight:700;
+  text-shadow:0 0 2px rgba(6,7,5,1),0 0 4px rgba(6,7,5,.98),0 1px 3px rgba(6,7,5,1),
+              0 0 12px rgba(6,7,5,.9),0 0 30px rgba(6,7,5,.7)}
+.hero h1{font-weight:600;
+  text-shadow:0 1px 2px rgba(6,7,5,.95),0 0 5px rgba(6,7,5,.8),0 2px 20px rgba(6,7,5,.8),
+              0 6px 60px rgba(6,7,5,.6)}
+.hero__rail b{text-shadow:0 0 2px rgba(6,7,5,1),0 0 5px rgba(6,7,5,.95),0 0 16px rgba(6,7,5,.8)}
+/* the outlined button had nothing to sit on - it becomes a solid light control */
+.btn--solidlight{background:var(--rice);color:var(--ink);border-color:var(--rice)}   /* 13.78:1 */
+.btn--solidlight:hover{background:var(--gold-bright);color:var(--ink);border-color:var(--gold-bright)}
+.hero .btn{box-shadow:0 6px 28px rgba(6,7,5,.34)}
+
+/* the trust line, moved off the video onto paper */
+.trust{display:flex;flex-wrap:wrap;gap:.7rem clamp(1.2rem,3vw,3rem);align-items:center}
+.trust span{font-family:var(--font-mono);font-weight:600;font-size:.75rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--ash);display:flex;align-items:center;gap:.7rem}  /* 5.94:1 */
+.trust span::before{content:"";width:.42rem;height:.42rem;border-radius:50%;background:var(--olive);flex:none}
 
 /* ---------------- phone ---------------- */
 @media (max-width:1080px){ .car{--per:2} .field-row{grid-template-columns:repeat(2,1fr)} }
@@ -821,20 +836,29 @@ function footer() {
 /* ---------------- pages ---------------- */
 
 function pageHome() {
+  // No sub-paragraph and no trust strip ON the footage. With the scrim removed
+  // the video runs bright, and 12-17px text cannot survive on top of it - so
+  // the hero carries only the eyebrow, the headline and two solid buttons, and
+  // the smaller copy moves down to the paper band where it is properly legible.
   return heroBlock('hero', 'Elephant herd crossing golden plains at dawn with balloons on the horizon',
     CO.tag,
     'Your Tanzania safari starts here',
-    'Private, tailor-made journeys through Tanzania’s national parks, wildlife areas, mountains and beaches — planned in Arusha, by people who live here.',
+    null,
     '<a class="btn btn--onnight" href="#/plan">Plan My Safari<span class="arw">&#8594;</span></a>' +
-    '<a class="btn btn--ghostnight" href="#/safaris">View Safaris<span class="arw">&#8594;</span></a>',
-    ['Arusha-based', 'Private vehicle &amp; guide', 'Tailor-made', 'Northern &amp; southern circuits'],
-    false, true) +
+    '<a class="btn btn--solidlight" href="#/safaris">View Safaris<span class="arw">&#8594;</span></a>',
+    null, false, true) +
+
+  '<section class="band band--tight"><div class="wrap">' +
+    '<div class="trust">' + ['Arusha-based', 'Private vehicle &amp; guide', 'Tailor-made journeys',
+      'Northern &amp; southern circuits'].map(t => '<span>' + t + '</span>').join('') + '</div>' +
+  '</div></section>' +
 
   '<section class="band"><div class="wrap split">' +
     '<div>' + sect(1, 'Who we are') +
     '<h2 class="display">Tanzania, shown to you by people who live in it.</h2></div>' +
     '<div style="display:grid;gap:1.3rem">' +
-      '<p class="lede" style="max-width:52ch">' + CO.name + ' is a tour operator based in Arusha, at the gateway to the northern safari circuit. We plan and run private safaris to the Serengeti, the Ngorongoro Crater, Tarangire, Lake Manyara and beyond, and combine them with Kilimanjaro and Zanzibar.</p>' +
+      '<p class="lede" style="max-width:52ch">Private, tailor-made journeys through Tanzania’s national parks, wildlife areas, mountains and beaches — planned in Arusha, by people who live here.</p>' +
+      '<p>' + CO.name + ' is a tour operator based in Arusha, at the gateway to the northern safari circuit. We plan and run private safaris to the Serengeti, the Ngorongoro Crater, Tarangire, Lake Manyara and beyond, and combine them with Kilimanjaro and Zanzibar.</p>' +
       '<p>Every trip is built for the people travelling on it. You get your own vehicle and your own guide, the route is yours to change, and the same person who plans the safari is reachable while you are on it.</p>' +
       '<p><a class="tlink" href="#/about">More about us<span class="arw">&#8594;</span></a></p>' +
     '</div></div></section>' +

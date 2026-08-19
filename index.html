@@ -192,7 +192,7 @@ p{margin:0}
    Law 5a: alpha floor is .72 at the top of the copy block. Composited over a
    pure-white frame pixel that is L=.083, where --rice measures 7.1:1. Verified
    from screenshot pixels behind hidden glyphs, per device. */
-.hero{position:relative;display:grid;align-items:end;min-height:clamp(34rem,90vh,58rem);
+.hero{position:relative;display:grid;align-items:end;min-height:clamp(36rem,94vh,62rem);
   border-bottom:1px solid var(--line);overflow:hidden;background:#0B0B0A}
 .hero--page{min-height:clamp(26rem,68vh,44rem)}
 .hero__media{position:absolute;inset:0;overflow:hidden}
@@ -201,13 +201,29 @@ p{margin:0}
    plays - blocked autoplay, decode failure, reduced motion, or a dead connection */
 .hero__media video{opacity:0;transition:opacity .9s var(--ease)}
 .hero__media video.on{opacity:1}
-/* Weighted LEFT, where the copy is, rather than flat across the frame - so the
-   right two-thirds of the footage stays bright and the animal is not buried.
-   Combined alpha bottom-left = 1-(1-.72)(1-.80) = .944; at the eyebrow = .83. */
+/* The frame stays BRIGHT. Instead of veiling the whole hero, the global pass is
+   a light vignette for depth only, and the darkening that carries the type is a
+   tight ellipse anchored to the bottom-left corner where the copy actually sits
+   (Law 5a: "a scrim sized to where the text really ends"). Everything right of
+   ~60% keeps the footage at full luminance. */
 .hero__scrim{position:absolute;inset:0;pointer-events:none;background:
-  linear-gradient(to top, rgba(10,10,9,.72) 0%, rgba(10,10,9,.60) 22%, rgba(10,10,9,.42) 44%,
-                          rgba(10,10,9,.20) 64%, rgba(10,10,9,.06) 82%, rgba(10,10,9,.30) 100%),
-  linear-gradient(to right, rgba(10,10,9,.80) 0%, rgba(10,10,9,.62) 34%, rgba(10,10,9,.28) 58%, rgba(10,10,9,0) 80%)}
+  linear-gradient(to top, rgba(10,10,9,.22) 0%, rgba(10,10,9,.08) 24%, rgba(10,10,9,0) 46%)}
+/* The darkening lives on the COPY BLOCK, not the frame: strong across the lower
+   third where the type sits, gone entirely above it, and eased off to the right
+   so the far side of the shot stays open. Alpha at the eyebrow (top of the
+   block) is ~.70, which puts --rice at 8:1 even over a blown-out sky pixel. */
+.hero__in::before{
+  content:"";position:absolute;inset:-4rem 0 -1rem 0;pointer-events:none;z-index:0;
+  background:linear-gradient(to top, rgba(8,9,7,.94) 0%, rgba(8,9,7,.90) 40%, rgba(8,9,7,.83) 66%,
+                                     rgba(8,9,7,.58) 84%, rgba(8,9,7,.18) 95%, rgba(8,9,7,0) 100%);
+  /* masked away toward the right, so the scrim only exists under the type and
+     the far side of the frame keeps the footage at full brightness */
+  -webkit-mask-image:linear-gradient(to right,#000 0%,#000 58%,rgba(0,0,0,.62) 74%,rgba(0,0,0,0) 92%);
+  mask-image:linear-gradient(to right,#000 0%,#000 58%,rgba(0,0,0,.62) 74%,rgba(0,0,0,0) 92%);
+}
+.hero__in > *{position:relative;z-index:1}
+/* pure margin on top of the measured scrim - costs the photograph nothing */
+.hero h1,.hero__sub,.hero__in .eyebrow,.hero__strip{text-shadow:0 1px 14px rgba(8,9,7,.55)}
 .hero__in{position:relative;z-index:2;padding:clamp(2.4rem,5vw,4.4rem) var(--gut) clamp(2.2rem,3.6vw,3.2rem);
   max-width:100rem;margin-inline:auto;width:100%}
 .hero h1{color:var(--rice);max-width:16ch}
@@ -344,9 +360,16 @@ p{margin:0}
      window the footage plays in. Verified from pixels, not estimated. */
   .hero{min-height:100dvh}
   .hero--page{min-height:clamp(24rem,62vh,34rem)}
+  /* On a phone the copy spans the full width, so the bottom-left ellipse cannot
+     cover it - the copy block carries a full-width vertical scrim instead, and
+     the global pass stays light so the footage above it is bright. */
   .hero__scrim{background:
-    linear-gradient(to top, rgba(10,10,9,.92) 0%, rgba(10,10,9,.88) 40%, rgba(10,10,9,.82) 60%,
-                            rgba(10,10,9,.74) 71%, rgba(10,10,9,.30) 88%, rgba(10,10,9,.44) 100%)}
+    linear-gradient(to top, rgba(10,10,9,.22) 0%, rgba(10,10,9,.08) 28%, rgba(10,10,9,0) 52%)}
+  /* no horizontal mask on a phone - the copy runs the full width, so masking the
+     right-hand side would strip the scrim out from under half of every line */
+  .hero__in::before{inset:-5rem 0 0 0;-webkit-mask-image:none;mask-image:none;background:
+    linear-gradient(to top, rgba(8,9,7,.94) 0%, rgba(8,9,7,.91) 44%, rgba(8,9,7,.86) 66%,
+                            rgba(8,9,7,.74) 80%, rgba(8,9,7,.30) 93%, rgba(8,9,7,0) 100%)}
   .hero .display--xl{font-size:clamp(2.4rem,9vw,3.4rem)}
   .hero__strip{gap:.55rem 1.4rem;margin-top:1.7rem;padding-top:1.1rem}
   .split,.split--even{grid-template-columns:1fr;gap:2rem}
@@ -380,11 +403,14 @@ p{margin:0}
   display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
   gap:1.15rem;padding-bottom:clamp(2.2rem,3.6vw,3.2rem);pointer-events:none;
 }
+/* the rail now sits over UNSCRIMMED footage, so it carries its own legibility */
 .hero__rail b{
   writing-mode:vertical-rl;font-family:var(--font-mono);font-weight:600;
-  font-size:.75rem;letter-spacing:.3em;text-transform:uppercase;color:var(--rice); /* 13.55:1 */
+  font-size:.75rem;letter-spacing:.3em;text-transform:uppercase;color:var(--rice);
+  text-shadow:0 1px 10px rgba(8,9,7,.9),0 0 3px rgba(8,9,7,.75);
 }
-.hero__rail i{display:block;width:1px;height:clamp(3rem,7vw,6.5rem);background:rgba(247,245,239,.5)}
+.hero__rail i{display:block;width:1px;height:clamp(3rem,7vw,6.5rem);
+  background:rgba(247,245,239,.75);box-shadow:0 0 6px rgba(8,9,7,.6)}
 /* the short page heroes cannot fit the full stack - it clipped at the top */
 .hero--page .hero__rail{justify-content:center}
 .hero--page .hero__rail b{display:none}
@@ -393,7 +419,10 @@ p{margin:0}
   width:4.4rem;height:4.4rem;border:1px solid var(--gold-bright);border-radius:50%;
   display:grid;place-items:center;text-align:center;
   font-family:var(--font-mono);font-weight:700;font-size:.75rem;letter-spacing:.06em;
-  line-height:1.15;color:var(--gold-bright);                                        /* 7.78:1 */
+  line-height:1.15;color:var(--gold-bright);
+  /* its own dark ground: --gold-bright measures 7.78:1 on it wherever the seal
+     lands, instead of floating over whatever the footage happens to be doing */
+  background:rgba(8,9,7,.62);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
 }
 
 /* --- section head: index, label, hairline. Replaces the bare eyebrow. --- */
@@ -483,7 +512,7 @@ p{margin:0}
 </head><body><div id="app"></div>
 
 <script>
-const A = {"hero":"assets/hero.webp","lionstree":"assets/lionstree.webp","serengeti":"assets/serengeti.webp","ngorongoro":"assets/ngorongoro.webp","tarangire":"assets/tarangire.webp","zanzibar":"assets/zanzibar.webp","migration":"assets/migration.webp","lionsplains":"assets/lionsplains.webp","lionpride":"assets/lionpride.webp","leoparddrink":"assets/leoparddrink.webp","leopardsrock":"assets/leopardsrock.webp","cheetahhero":"assets/cheetahhero.webp","gate":"assets/gate.webp","arusha":"assets/arusha.webp","kilimanjaro":"assets/kilimanjaro.webp","manyara":"assets/manyara.webp","ndutu":"assets/ndutu.webp","lionrock":"assets/lionrock.webp","leopardtree":"assets/leopardtree.webp","leopardclose":"assets/leopardclose.webp","cheetahs":"assets/cheetahs.webp","giraffes":"assets/giraffes.webp","elephantfamily":"assets/elephantfamily.webp","elephantswater":"assets/elephantswater.webp","elephantsky":"assets/elephantsky.webp","rhino":"assets/rhino.webp","maasai":"assets/maasai.webp","zanzibarbeach":"assets/zanzibarbeach.webp","zanzibarwater":"assets/zanzibarwater.webp","elephantspar":"assets/elephantspar.webp","herovideo":"assets/herovideo.mp4"};
+const A = {"hero":"assets/hero.webp","lionstree":"assets/lionstree.webp","serengeti":"assets/serengeti.webp","ngorongoro":"assets/ngorongoro.webp","tarangire":"assets/tarangire.webp","zanzibar":"assets/zanzibar.webp","migration":"assets/migration.webp","kilimanjaro":"assets/kilimanjaro.webp","arusha":"assets/arusha.webp","maasai":"assets/maasai.webp","lionsplains":"assets/lionsplains.webp","lionpride":"assets/lionpride.webp","leoparddrink":"assets/leoparddrink.webp","leopardsrock":"assets/leopardsrock.webp","cheetahhero":"assets/cheetahhero.webp","gate":"assets/gate.webp","manyara":"assets/manyara.webp","ndutu":"assets/ndutu.webp","lionrock":"assets/lionrock.webp","leopardtree":"assets/leopardtree.webp","leopardclose":"assets/leopardclose.webp","cheetahs":"assets/cheetahs.webp","giraffes":"assets/giraffes.webp","elephantfamily":"assets/elephantfamily.webp","elephantswater":"assets/elephantswater.webp","elephantsky":"assets/elephantsky.webp","rhino":"assets/rhino.webp","zanzibarbeach":"assets/zanzibarbeach.webp","zanzibarwater":"assets/zanzibarwater.webp","elephantspar":"assets/elephantspar.webp","herovideo":"assets/herovideo.mp4"};
 
 const CO = {
   name: 'Arusha Wildlife Safaris',

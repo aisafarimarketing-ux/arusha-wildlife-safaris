@@ -214,12 +214,12 @@ p{margin:0}
    block) is ~.70, which puts --rice at 8:1 even over a blown-out sky pixel. */
 .hero__in::before{
   content:"";position:absolute;inset:-4rem 0 -1rem 0;pointer-events:none;z-index:0;
-  background:linear-gradient(to top, rgba(8,9,7,.94) 0%, rgba(8,9,7,.90) 40%, rgba(8,9,7,.83) 66%,
-                                     rgba(8,9,7,.58) 84%, rgba(8,9,7,.18) 95%, rgba(8,9,7,0) 100%);
+  background:linear-gradient(to top, rgba(8,9,7,.90) 0%, rgba(8,9,7,.84) 42%, rgba(8,9,7,.74) 68%,
+                                     rgba(8,9,7,.62) 85%, rgba(8,9,7,.22) 95%, rgba(8,9,7,0) 100%);
   /* masked away toward the right, so the scrim only exists under the type and
      the far side of the frame keeps the footage at full brightness */
-  -webkit-mask-image:linear-gradient(to right,#000 0%,#000 58%,rgba(0,0,0,.62) 74%,rgba(0,0,0,0) 92%);
-  mask-image:linear-gradient(to right,#000 0%,#000 58%,rgba(0,0,0,.62) 74%,rgba(0,0,0,0) 92%);
+  -webkit-mask-image:linear-gradient(to right,#000 0%,#000 50%,rgba(0,0,0,.55) 70%,rgba(0,0,0,0) 88%);
+  mask-image:linear-gradient(to right,#000 0%,#000 50%,rgba(0,0,0,.55) 70%,rgba(0,0,0,0) 88%);
 }
 .hero__in > *{position:relative;z-index:1}
 /* pure margin on top of the measured scrim - costs the photograph nothing */
